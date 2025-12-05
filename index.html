@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TAG - Trusted Adult Games. A web accessible adult gaming hub for the sex positive community.">
+    <title>TAG - Trusted Adult Games</title>
+    <link rel="stylesheet" href="src/css/styles.css">
+</head>
+<body>
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <!-- Age Verification Modal -->
+    <div id="age-verification" class="modal" role="dialog" aria-modal="true" aria-labelledby="age-title">
+        <div class="modal-content">
+            <h1 id="age-title">Welcome to TAG</h1>
+            <p class="subtitle">Trusted Adult Games</p>
+            <p>This website contains adult content intended for users 18 years of age or older.</p>
+            <p>By entering, you confirm that you are of legal age in your jurisdiction.</p>
+            <div class="button-group">
+                <button id="age-confirm" class="btn btn-primary" aria-label="Confirm you are 18 or older and enter the site">
+                    I am 18 or older - Enter
+                </button>
+                <button id="age-deny" class="btn btn-secondary" aria-label="Exit the site if you are under 18">
+                    I am under 18 - Exit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content (hidden until age verified) -->
+    <div id="main-content" class="hidden" aria-hidden="true">
+        <header class="site-header">
+            <nav class="main-nav" aria-label="Main navigation">
+                <div class="logo">
+                    <a href="/" aria-label="TAG Home">
+                        <span class="logo-text">TAG</span>
+                        <span class="logo-tagline">Trusted Adult Games</span>
+                    </a>
+                </div>
+                <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Toggle navigation menu">
+                    <span class="nav-toggle-icon"></span>
+                </button>
+                <ul id="nav-menu" class="nav-links">
+                    <li><a href="#games" class="nav-link">Games</a></li>
+                    <li><a href="#community" class="nav-link">Community</a></li>
+                    <li><a href="#about" class="nav-link">About</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main id="main">
+            <!-- Hero Section -->
+            <section class="hero" aria-labelledby="hero-title">
+                <div class="hero-content">
+                    <h1 id="hero-title">Welcome to TAG</h1>
+                    <p class="hero-subtitle">Your trusted destination for adult games in a sex-positive community</p>
+                    <a href="#games" class="btn btn-primary btn-large">Browse Games</a>
+                </div>
+            </section>
+
+            <!-- Games Section -->
+            <section id="games" class="games-section" aria-labelledby="games-title">
+                <div class="container">
+                    <h2 id="games-title">Featured Games</h2>
+                    <p class="section-description">Explore our curated collection of adult games</p>
+                    
+                    <div class="games-grid" role="list">
+                        <article class="game-card" role="listitem">
+                            <div class="game-image" aria-hidden="true">
+                                <div class="placeholder-image">🎮</div>
+                            </div>
+                            <div class="game-info">
+                                <h3 class="game-title">Coming Soon</h3>
+                                <p class="game-description">New games are being added to our collection.</p>
+                                <span class="game-tag">Featured</span>
+                            </div>
+                        </article>
+                        
+                        <article class="game-card" role="listitem">
+                            <div class="game-image" aria-hidden="true">
+                                <div class="placeholder-image">🎲</div>
+                            </div>
+                            <div class="game-info">
+                                <h3 class="game-title">Coming Soon</h3>
+                                <p class="game-description">Stay tuned for exciting new releases.</p>
+                                <span class="game-tag">New</span>
+                            </div>
+                        </article>
+                        
+                        <article class="game-card" role="listitem">
+                            <div class="game-image" aria-hidden="true">
+                                <div class="placeholder-image">🃏</div>
+                            </div>
+                            <div class="game-info">
+                                <h3 class="game-title">Coming Soon</h3>
+                                <p class="game-description">Join our community to get updates.</p>
+                                <span class="game-tag">Popular</span>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Community Section -->
+            <section id="community" class="community-section" aria-labelledby="community-title">
+                <div class="container">
+                    <h2 id="community-title">Join Our Community</h2>
+                    <p class="section-description">Connect with like-minded individuals in a safe, respectful environment</p>
+                    
+                    <div class="community-features">
+                        <div class="feature-card">
+                            <div class="feature-icon" aria-hidden="true">🔒</div>
+                            <h3>Safe Space</h3>
+                            <p>A welcoming environment built on respect and consent.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon" aria-hidden="true">💬</div>
+                            <h3>Open Discussion</h3>
+                            <p>Engage in meaningful conversations about games and more.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon" aria-hidden="true">🌈</div>
+                            <h3>Inclusive</h3>
+                            <p>Everyone is welcome regardless of identity or orientation.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- About Section -->
+            <section id="about" class="about-section" aria-labelledby="about-title">
+                <div class="container">
+                    <h2 id="about-title">About TAG</h2>
+                    <div class="about-content">
+                        <p>TAG (Trusted Adult Games) is a web-accessible adult gaming hub created for the sex-positive community. Our mission is to provide a safe, inclusive, and accessible platform for adults to discover and enjoy quality games.</p>
+                        <p>We believe in:</p>
+                        <ul class="values-list">
+                            <li><strong>Accessibility</strong> - Making our platform usable for everyone</li>
+                            <li><strong>Consent</strong> - Respecting boundaries and promoting healthy attitudes</li>
+                            <li><strong>Inclusivity</strong> - Welcoming all identities and orientations</li>
+                            <li><strong>Quality</strong> - Curating the best content for our community</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <span class="footer-logo">TAG</span>
+                        <p>Trusted Adult Games</p>
+                    </div>
+                    <nav class="footer-nav" aria-label="Footer navigation">
+                        <ul>
+                            <li><a href="#games">Games</a></li>
+                            <li><a href="#community">Community</a></li>
+                            <li><a href="#about">About</a></li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2025 TAG - Trusted Adult Games. All rights reserved.</p>
+                    <p class="footer-disclaimer">This site is intended for adults 18 years of age or older.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="src/js/main.js"></script>
+</body>
+</html>
