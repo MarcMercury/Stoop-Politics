@@ -24,6 +24,8 @@ CREATE TABLE transcript_nodes (
   episode_id UUID REFERENCES episodes(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
   display_order INTEGER NOT NULL DEFAULT 0,
+  start_time FLOAT,
+  end_time FLOAT,
   reference_link TEXT,
   reference_title TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
