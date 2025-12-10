@@ -56,32 +56,39 @@ export default async function Home() {
                 <h1 className="text-3xl md:text-4xl font-serif font-black text-white">
                   Jessie Mercury
                 </h1>
-                <p className="text-stone-400 text-sm mt-1">Dishing NYC news, one stoop at a time</p>
+                <p className="text-stone-400 text-sm mt-1 italic">Watch your step</p>
               </div>
-              <div className="hidden md:block text-6xl">🗽</div>
+              {/* Jessie illustration */}
+              <div className="hidden md:block w-20 h-20 rounded-full overflow-hidden border-2 border-orange-500 shadow-lg">
+                <img 
+                  src="/jessie-stoop.png" 
+                  alt="Jessie Mercury"
+                  className="w-full h-full object-cover object-top"
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ===== HERO IMAGE - NYC STOOP VIBES ===== */}
+        {/* ===== HERO IMAGE - NYC BROWNSTONE STREET ===== */}
         <header className="relative max-w-5xl mx-auto px-6 pt-8 pb-8">
           
-          {/* Main Hero Image - Iconic NYC Stoop Scene */}
+          {/* Main Hero Image - NYC Brownstone Street with Stoops */}
           <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl mb-10 bg-stone-800 group cursor-pointer">
             <img 
-              src="https://images.unsplash.com/photo-1555529771-7888783a18d3?q=80&w=2000&auto=format&fit=crop"
-              alt="NYC Stoop Scene"
-              className="object-cover w-full h-full grayscale-[30%] group-hover:grayscale-0 transition-all duration-700 ease-out scale-100 group-hover:scale-105"
+              src="https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?q=80&w=2000&auto=format&fit=crop"
+              alt="NYC Brownstone Street"
+              className="object-cover w-full h-full grayscale group-hover:grayscale-[50%] transition-all duration-700 ease-out scale-100 group-hover:scale-105"
             />
             
             {/* Gradient overlays for text readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-stone-900/90 via-stone-900/30 to-transparent"></div>
             <div className="absolute inset-0 bg-gradient-to-r from-stone-900/50 to-transparent"></div>
             
-            {/* Decorative NYC elements */}
+            {/* Live from Manhattan badge */}
             <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2">
               <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-              Live from Brooklyn
+              Live from Manhattan
             </div>
             
             {/* Coming Soon Overlay */}
@@ -99,37 +106,30 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Welcome Card */}
+          {/* Welcome Card with Jessie Illustration */}
           <div className="bg-white rounded-xl p-6 shadow-lg border border-stone-200 mb-6 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-orange-500 to-orange-600"></div>
-            <p className="text-lg text-stone-700 leading-relaxed pl-4 italic">
-              "Welcome to Stoop Politics — where we break down the news that matters to New Yorkers, straight from the stoop. No studio, no script, just real talk."
-            </p>
-            <p className="text-sm text-stone-500 pl-4 mt-3 font-medium">— Jessie Mercury</p>
-          </div>
-
-          {/* What to Expect Section */}
-          <div className="grid md:grid-cols-3 gap-6 mt-8">
-            <div className="bg-stone-100 rounded-xl p-5 text-center">
-              <div className="text-3xl mb-3">🏙️</div>
-              <h3 className="font-bold text-stone-800 mb-2">NYC News</h3>
-              <p className="text-sm text-stone-600">Local stories that affect your block, your borough, your city.</p>
-            </div>
-            <div className="bg-stone-100 rounded-xl p-5 text-center">
-              <div className="text-3xl mb-3">🗣️</div>
-              <h3 className="font-bold text-stone-800 mb-2">Real Talk</h3>
-              <p className="text-sm text-stone-600">Unfiltered opinions from the neighborhood. No corporate spin.</p>
-            </div>
-            <div className="bg-stone-100 rounded-xl p-5 text-center">
-              <div className="text-3xl mb-3">📚</div>
-              <h3 className="font-bold text-stone-800 mb-2">Receipts</h3>
-              <p className="text-sm text-stone-600">Every claim backed up with links. Click to verify.</p>
+            <div className="flex items-start gap-6">
+              {/* Jessie on Stoop Illustration */}
+              <div className="hidden md:block flex-shrink-0 w-32">
+                <img 
+                  src="/jessie-stoop.png" 
+                  alt="Jessie on the stoop"
+                  className="w-full rounded-lg shadow-md"
+                />
+              </div>
+              <div className="flex-1 pl-4 md:pl-0">
+                <p className="text-lg text-stone-700 leading-relaxed italic">
+                  "Welcome to Stoop Politics — where we break down the news that matters to New Yorkers, straight from the stoop. No studio, no script, just real talk."
+                </p>
+                <p className="text-sm text-stone-500 mt-3 font-medium">— Jessie Mercury</p>
+              </div>
             </div>
           </div>
         </header>
 
         {/* ===== FOOTER ===== */}
-        <footer className="border-t border-stone-200 bg-stone-100 mt-16">
+        <footer className="border-t border-stone-200 bg-stone-100 mt-8">
           <div className="max-w-5xl mx-auto px-6 py-8 text-center">
             <p className="text-sm text-stone-500">
               &copy; {new Date().getFullYear()} Stoop Politics. All rights reserved.
@@ -220,9 +220,16 @@ export default async function Home() {
               <h1 className="text-3xl md:text-4xl font-serif font-black text-white">
                 Jessie Mercury
               </h1>
-              <p className="text-stone-400 text-sm mt-1">Dishing NYC news, one stoop at a time</p>
+              <p className="text-stone-400 text-sm mt-1 italic">Watch your step</p>
             </div>
-            <div className="hidden md:block text-6xl">🗽</div>
+            {/* Jessie illustration */}
+            <div className="hidden md:block w-20 h-20 rounded-full overflow-hidden border-2 border-orange-500 shadow-lg">
+              <img 
+                src="/jessie-stoop.png" 
+                alt="Jessie Mercury"
+                className="w-full h-full object-cover object-top"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -232,21 +239,21 @@ export default async function Home() {
         
         {/* Main Hero Image - Iconic NYC Stoop Scene */}
         <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl mb-10 bg-stone-800 group cursor-pointer">
-          {/* Cover image - use episode cover or fallback to stoop image */}
+          {/* Cover image - use episode cover or fallback to brownstone street */}
           <img 
-            src={latestEpisode.cover_image_url || "https://images.unsplash.com/photo-1555529771-7888783a18d3?q=80&w=2000&auto=format&fit=crop"}
+            src={latestEpisode.cover_image_url || "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?q=80&w=2000&auto=format&fit=crop"}
             alt="NYC Stoop Scene"
-            className="object-cover w-full h-full grayscale-[30%] group-hover:grayscale-0 transition-all duration-700 ease-out scale-100 group-hover:scale-105"
+            className="object-cover w-full h-full grayscale group-hover:grayscale-[50%] transition-all duration-700 ease-out scale-100 group-hover:scale-105"
           />
           
           {/* Gradient overlays for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-stone-900/90 via-stone-900/30 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-stone-900/50 to-transparent"></div>
           
-          {/* Decorative NYC elements */}
+          {/* Live from Manhattan badge */}
           <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2">
             <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-            Live from Brooklyn
+            Live from Manhattan
           </div>
           
           {/* Episode Badge & Title Overlay */}
