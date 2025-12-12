@@ -2,15 +2,22 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { ChevronDown, User } from "lucide-react";
 
+// Force dynamic rendering - no caching, fetch fresh data every request
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Server Component - runs on every request
 export default async function Home() {
 
   // 1. Fetch ALL published episodes for the archive dropdown
-  const { data: allEpisodes } = await supabase
+  const { data: allEpisodes, error } = await supabase
     .from('episodes')
     .select('*')
     .eq('is_published', true)
     .order('published_at', { ascending: false });
+
+  // Debug: Log to server console
+  console.log('Fetched episodes:', allEpisodes?.length || 0, 'Error:', error?.message || 'none');
 
   // 2. Get the latest episode (first in the sorted list)
   const latestEpisode = allEpisodes?.[0];
