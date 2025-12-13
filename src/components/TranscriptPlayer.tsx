@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, Share2, Check, Link as LinkIcon } from 'lucide-react';
+import { Play, Pause, Share2, Check, Link as LinkIcon, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface TranscriptNode {
   id: string;
@@ -17,9 +17,11 @@ interface TranscriptPlayerProps {
   audioUrl: string;
   transcriptNodes: TranscriptNode[];
   episodeTitle: string;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export default function TranscriptPlayer({ audioUrl, transcriptNodes, episodeTitle }: TranscriptPlayerProps) {
+export default function TranscriptPlayer({ audioUrl, transcriptNodes, episodeTitle, isCollapsed = true, onToggleCollapse }: TranscriptPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -239,15 +241,36 @@ export default function TranscriptPlayer({ audioUrl, transcriptNodes, episodeTit
           <h3 className="text-sm font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500">
             Transcript
           </h3>
-          <p className="text-xs text-stone-400 dark:text-slate-500">
-            Click any sentence to jump to that moment
-          </p>
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="flex items-center gap-2 text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors"
+            >
+              {isCollapsed ? (
+                <>
+                  <ChevronDown size={16} />
+                  Read Full Transcript
+                </>
+              ) : (
+                <>
+                  <ChevronUp size={16} />
+                  Collapse Transcript
+                </>
+              )}
+            </button>
+          )}
         </div>
         
+        {/* Collapsible Container */}
         <div 
-          ref={transcriptRef}
-          className="prose prose-lg prose-stone dark:prose-invert max-w-none leading-relaxed text-stone-700 dark:text-slate-300"
+          className={`relative overflow-hidden transition-all duration-500 ease-in-out ${
+            isCollapsed ? 'max-h-40' : 'max-h-[5000px]'
+          }`}
         >
+          <div 
+            ref={transcriptRef}
+            className="prose prose-lg prose-stone dark:prose-invert max-w-none leading-relaxed text-stone-700 dark:text-slate-300"
+          >
           {transcriptNodes && transcriptNodes.length > 0 ? (
             transcriptNodes.map((node, index) => {
               const isActive = activeNodeIndex === index;
@@ -304,7 +327,42 @@ export default function TranscriptPlayer({ audioUrl, transcriptNodes, episodeTit
               Transcript will appear here once generated.
             </p>
           )}
+          </div>
+          
+          {/* Gradient fade overlay when collapsed */}
+          {isCollapsed && transcriptNodes && transcriptNodes.length > 0 && (
+            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-stone-50 dark:from-slate-900 to-transparent pointer-events-none" />
+          )}
         </div>
+        
+        {/* Expand button at bottom when collapsed */}
+        {isCollapsed && transcriptNodes && transcriptNodes.length > 0 && onToggleCollapse && (
+          <div className="text-center mt-4">
+            <button
+              onClick={onToggleCollapse}
+              className="inline-flex items-center gap-2 bg-stone-900 dark:bg-slate-700 hover:bg-stone-800 dark:hover:bg-slate-600 text-white font-medium px-5 py-2.5 rounded-xl transition-colors shadow-lg"
+            >
+              <ChevronDown size={18} />
+              Read Full Transcript
+            </button>
+            <p className="text-xs text-stone-400 dark:text-slate-500 mt-2">
+              Click any sentence to jump to that moment
+            </p>
+          </div>
+        )}
+        
+        {/* Collapse button at bottom when expanded */}
+        {!isCollapsed && transcriptNodes && transcriptNodes.length > 0 && onToggleCollapse && (
+          <div className="text-center mt-8 pt-6 border-t border-stone-200 dark:border-slate-700">
+            <button
+              onClick={onToggleCollapse}
+              className="inline-flex items-center gap-2 bg-stone-200 dark:bg-slate-700 hover:bg-stone-300 dark:hover:bg-slate-600 text-stone-700 dark:text-slate-200 font-medium px-5 py-2.5 rounded-xl transition-colors"
+            >
+              <ChevronUp size={18} />
+              Collapse Transcript
+            </button>
+          </div>
+        )}
       </article>
     </>
   );

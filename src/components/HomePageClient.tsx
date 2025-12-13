@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronDown, User } from 'lucide-react';
+import { ChevronDown, User, Bell, BellOff, Loader2 } from 'lucide-react';
 import TranscriptPlayer from './TranscriptPlayer';
 import AskTheStoop from './AskTheStoop';
+import StoopGate from './StoopGate';
 import { StoopModeProvider, useTimeOfDay, themeClasses } from './StoopMode';
 
 interface Episode {
@@ -37,14 +38,59 @@ interface HomePageClientProps {
 function HomePageContent({ latestEpisode, previousEpisodes, transcript }: HomePageClientProps) {
   const timeOfDay = useTimeOfDay();
   const [mounted, setMounted] = useState(false);
+  const [showGate, setShowGate] = useState(true);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationEmail, setNotificationEmail] = useState('');
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationSuccess, setNotificationSuccess] = useState(false);
+  const [transcriptExpanded, setTranscriptExpanded] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Check for subscription cookie
+    const hasSubscribed = document.cookie.includes('stoop_subscriber=true');
+    setShowGate(!hasSubscribed);
   }, []);
+
+  const handleSubscribed = () => {
+    setShowGate(false);
+  };
+
+  const handleNotificationOptIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notificationEmail || !notificationEmail.includes('@')) return;
+    
+    setNotificationLoading(true);
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: notificationEmail, enabled: true }),
+      });
+      
+      if (response.ok) {
+        setNotificationSuccess(true);
+        setTimeout(() => {
+          setShowNotificationModal(false);
+          setNotificationSuccess(false);
+          setNotificationEmail('');
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Failed to opt in:', error);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
 
   // Use afternoon theme during SSR, then switch to actual theme after mount
   const theme = themeClasses[mounted ? timeOfDay : 'afternoon'];
   const isEvening = mounted && timeOfDay === 'evening';
+
+  // Show gate if not subscribed
+  if (mounted && showGate) {
+    return <StoopGate onSubscribed={handleSubscribed} />;
+  }
 
   return (
     <main className={`min-h-screen font-sans ${theme.main} transition-colors duration-500`}>
@@ -188,6 +234,8 @@ function HomePageContent({ latestEpisode, previousEpisodes, transcript }: HomePa
         audioUrl={latestEpisode.audio_url}
         transcriptNodes={transcript}
         episodeTitle={latestEpisode.title}
+        isCollapsed={!transcriptExpanded}
+        onToggleCollapse={() => setTranscriptExpanded(!transcriptExpanded)}
       />
 
       {/* ===== PREVIOUS EPISODES ARCHIVE ===== */}
@@ -245,6 +293,86 @@ function HomePageContent({ latestEpisode, previousEpisodes, transcript }: HomePa
 
       {/* ===== ASK THE STOOP - LISTENER MAILBAG ===== */}
       <AskTheStoop />
+
+      {/* ===== NOTIFICATION OPT-IN BANNER ===== */}
+      <section className={`max-w-5xl mx-auto px-6 py-6`}>
+        <div className={`rounded-xl p-4 border flex flex-col sm:flex-row items-center justify-between gap-4 ${isEvening ? 'bg-slate-800 border-slate-700' : 'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${isEvening ? 'bg-orange-900/50' : 'bg-orange-100'}`}>
+              <Bell className="text-orange-500" size={20} />
+            </div>
+            <div>
+              <p className={`font-medium ${isEvening ? 'text-slate-100' : 'text-stone-900'}`}>
+                Get the weekly drop right to your email
+              </p>
+              <p className={`text-sm ${isEvening ? 'text-slate-400' : 'text-stone-500'}`}>
+                Never miss a new episode from the stoop
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowNotificationModal(true)}
+            className="flex-shrink-0 bg-orange-600 hover:bg-orange-700 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors flex items-center gap-2"
+          >
+            <Bell size={16} />
+            Subscribe to Notifications
+          </button>
+        </div>
+      </section>
+
+      {/* ===== NOTIFICATION OPT-IN MODAL ===== */}
+      {showNotificationModal && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowNotificationModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            {notificationSuccess ? (
+              <div className="text-center py-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Bell className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-bold text-stone-900 mb-2">You&apos;re all set!</h3>
+                <p className="text-stone-600">You&apos;ll get an email when new episodes drop.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-stone-900">Get Notified</h3>
+                  <button onClick={() => setShowNotificationModal(false)} className="text-stone-400 hover:text-stone-600">
+                    <BellOff size={20} />
+                  </button>
+                </div>
+                <p className="text-stone-600 mb-4">Enter your email to receive notifications when new episodes drop.</p>
+                <form onSubmit={handleNotificationOptIn} className="space-y-4">
+                  <input
+                    type="email"
+                    value={notificationEmail}
+                    onChange={(e) => setNotificationEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-stone-900"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    disabled={notificationLoading}
+                    className="w-full bg-stone-900 hover:bg-stone-800 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {notificationLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Subscribing...
+                      </>
+                    ) : (
+                      <>
+                        <Bell size={18} />
+                        Subscribe to Notifications
+                      </>
+                    )}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ===== FOOTER ===== */}
       <footer className={`border-t ${theme.footer} transition-colors duration-500`}>

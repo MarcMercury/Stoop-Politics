@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Mic, List, Edit, ExternalLink, Clock, Trash2, Wand2, Loader2, CheckCircle, MessageSquare, Mail, MailOpen, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Mic, List, Edit, ExternalLink, Clock, Trash2, Wand2, Loader2, CheckCircle, MessageSquare, Mail, MailOpen, X, ChevronDown, ChevronUp, Users, Bell, Send } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface InboxMessage {
@@ -24,6 +24,10 @@ export default function AdminDashboard() {
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [expandedMessage, setExpandedMessage] = useState<number | null>(null);
   const [deletingMessage, setDeletingMessage] = useState<number | null>(null);
+  
+  // Subscribers state
+  const [subscriberCount, setSubscriberCount] = useState(0);
+  const [notifyingSubscribers, setNotifyingSubscribers] = useState<string | null>(null);
 
   const fetchEpisodes = async () => {
     const { data } = await supabase
@@ -45,9 +49,20 @@ export default function AdminDashboard() {
     setMessagesLoading(false);
   };
 
+  const fetchSubscriberCount = async () => {
+    const { count } = await supabase
+      .from('subscribers')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .eq('notifications_enabled', true);
+    
+    if (count !== null) setSubscriberCount(count);
+  };
+
   useEffect(() => {
     fetchEpisodes();
     fetchMessages();
+    fetchSubscriberCount();
   }, []);
 
   // Mark message as read
@@ -70,6 +85,44 @@ export default function AdminDashboard() {
     
     setMessages(prev => prev.filter(m => m.id !== id));
     setDeletingMessage(null);
+  };
+
+  // Notify subscribers about a new episode
+  const handleNotifySubscribers = async (episode: any) => {
+    if (!episode.is_published) {
+      alert('Please publish the episode first before notifying subscribers.');
+      return;
+    }
+    
+    if (!confirm(`Send notification to ${subscriberCount} subscribers about "${episode.title}"?`)) {
+      return;
+    }
+    
+    setNotifyingSubscribers(episode.id);
+    
+    try {
+      const response = await fetch('/api/email/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          episodeTitle: episode.title,
+          episodeSummary: episode.summary,
+          episodeId: episode.id,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert(`Successfully notified ${result.sentCount} subscribers!`);
+      } else {
+        throw new Error(result.error || 'Failed to send notifications');
+      }
+    } catch (error: any) {
+      alert('Error sending notifications: ' + error.message);
+    } finally {
+      setNotifyingSubscribers(null);
+    }
   };
 
   const formatDuration = (seconds: number) => {
@@ -170,59 +223,86 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold text-stone-900">Command Center</h1>
           <p className="text-stone-500 mt-1">Manage your episodes and broadcasts</p>
         </div>
-        <Link 
-          href="/admin/episodes/new"
-          className="bg-stone-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-stone-800 transition-colors flex items-center gap-2 shadow-lg"
-        >
-          <Mic size={20} />
-          New Episode
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link 
+            href="/admin/subscribers"
+            className="bg-orange-100 text-orange-700 px-5 py-3 rounded-xl font-semibold hover:bg-orange-200 transition-colors flex items-center gap-2"
+          >
+            <Users size={20} />
+            Subscribers
+            {subscriberCount > 0 && (
+              <span className="bg-orange-600 text-white text-xs px-2 py-0.5 rounded-full ml-1">
+                {subscriberCount}
+              </span>
+            )}
+          </Link>
+          <Link 
+            href="/admin/episodes/new"
+            className="bg-stone-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-stone-800 transition-colors flex items-center gap-2 shadow-lg"
+          >
+            <Mic size={20} />
+            New Episode
+          </Link>
+        </div>
       </div>
       
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-        <div className="bg-white rounded-xl border border-stone-200 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-stone-100 rounded-lg flex items-center justify-center">
-              <List className="text-stone-600" size={20} />
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
+        <div className="bg-white rounded-xl border border-stone-200 p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 bg-stone-100 rounded-lg flex items-center justify-center">
+              <List className="text-stone-600" size={18} />
             </div>
-            <span className="text-sm font-medium text-stone-500">Total Episodes</span>
+            <span className="text-sm font-medium text-stone-500">Episodes</span>
           </div>
-          <p className="text-4xl font-bold text-stone-900">{episodes.length}</p>
+          <p className="text-3xl font-bold text-stone-900">{episodes.length}</p>
         </div>
         
-        <div className="bg-white rounded-xl border border-stone-200 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <CheckCircle className="text-green-600" size={20} />
+        <div className="bg-white rounded-xl border border-stone-200 p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center">
+              <CheckCircle className="text-green-600" size={18} />
             </div>
             <span className="text-sm font-medium text-stone-500">Published</span>
           </div>
-          <p className="text-4xl font-bold text-green-600">{episodes.filter(e => e.is_published).length}</p>
+          <p className="text-3xl font-bold text-green-600">{episodes.filter(e => e.is_published).length}</p>
         </div>
         
-        <div className="bg-white rounded-xl border border-stone-200 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-              <Edit className="text-amber-600" size={20} />
+        <div className="bg-white rounded-xl border border-stone-200 p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center">
+              <Edit className="text-amber-600" size={18} />
             </div>
             <span className="text-sm font-medium text-stone-500">Drafts</span>
           </div>
-          <p className="text-4xl font-bold text-amber-600">{episodes.filter(e => !e.is_published).length}</p>
+          <p className="text-3xl font-bold text-amber-600">{episodes.filter(e => !e.is_published).length}</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-stone-200 p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-              <MessageSquare className="text-orange-600" size={20} />
+        <div className="bg-white rounded-xl border border-stone-200 p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center">
+              <MessageSquare className="text-orange-600" size={18} />
             </div>
             <span className="text-sm font-medium text-stone-500">Messages</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <p className="text-4xl font-bold text-orange-600">{messages.filter(m => !m.is_read).length}</p>
-            <span className="text-sm text-stone-400">unread</span>
+            <p className="text-3xl font-bold text-orange-600">{messages.filter(m => !m.is_read).length}</p>
+            <span className="text-xs text-stone-400">unread</span>
           </div>
         </div>
+
+        <Link href="/admin/subscribers" className="bg-white rounded-xl border border-stone-200 p-5 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Bell className="text-purple-600" size={18} />
+            </div>
+            <span className="text-sm font-medium text-stone-500">Subscribers</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p className="text-3xl font-bold text-purple-600">{subscriberCount}</p>
+            <span className="text-xs text-stone-400">with notifications</span>
+          </div>
+        </Link>
       </div>
 
       {/* Messages Tile - Ask the Stoop Inbox */}
@@ -440,6 +520,22 @@ export default function AdminDashboard() {
                         >
                           <ExternalLink size={18} />
                         </Link>
+                      )}
+                      
+                      {/* Notify Subscribers */}
+                      {episode.is_published && (
+                        <button
+                          onClick={() => handleNotifySubscribers(episode)}
+                          disabled={notifyingSubscribers === episode.id}
+                          className="p-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-50"
+                          title={`Notify ${subscriberCount} subscribers`}
+                        >
+                          {notifyingSubscribers === episode.id ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Send size={18} />
+                          )}
+                        </button>
                       )}
                       
                       {/* Delete */}

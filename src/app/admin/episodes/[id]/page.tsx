@@ -3,7 +3,7 @@
 import { useEffect, useState, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ExternalLink, Play, Pause, Link as LinkIcon, Check, Loader2, Wand2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Play, Pause, Link as LinkIcon, Check, Loader2, Wand2, ImagePlus, X } from 'lucide-react';
 
 export default function TranscriptEditor({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -16,6 +16,10 @@ export default function TranscriptEditor({ params }: { params: Promise<{ id: str
   const [publishing, setPublishing] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playingNode, setPlayingNode] = useState<string | null>(null);
+  
+  // Cover image state
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   // Load Data
   useEffect(() => {
@@ -85,6 +89,78 @@ export default function TranscriptEditor({ params }: { params: Promise<{ id: str
     } else {
       alert('Error publishing: ' + error.message);
       setPublishing(false);
+    }
+  };
+
+  // Handle cover image upload
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image too large. Maximum size is 5MB.');
+      return;
+    }
+
+    setCoverUploading(true);
+
+    try {
+      const coverFilename = `cover-${resolvedParams.id}-${Date.now()}.${file.name.split('.').pop()}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(`covers/${coverFilename}`, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('media')
+        .getPublicUrl(`covers/${coverFilename}`);
+
+      // Update episode record
+      const { error: dbError } = await supabase
+        .from('episodes')
+        .update({ cover_image_url: publicUrl })
+        .eq('id', resolvedParams.id);
+
+      if (dbError) throw dbError;
+
+      // Update local state
+      setEpisode((prev: any) => ({ ...prev, cover_image_url: publicUrl }));
+
+    } catch (error: any) {
+      alert('Error uploading cover: ' + error.message);
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
+  // Remove cover image
+  const handleRemoveCover = async () => {
+    if (!confirm('Remove the cover image?')) return;
+
+    setCoverUploading(true);
+
+    try {
+      const { error } = await supabase
+        .from('episodes')
+        .update({ cover_image_url: null })
+        .eq('id', resolvedParams.id);
+
+      if (error) throw error;
+
+      setEpisode((prev: any) => ({ ...prev, cover_image_url: null }));
+    } catch (error: any) {
+      alert('Error removing cover: ' + error.message);
+    } finally {
+      setCoverUploading(false);
     }
   };
 
@@ -164,6 +240,83 @@ export default function TranscriptEditor({ params }: { params: Promise<{ id: str
 
       {/* EDITOR */}
       <div className="max-w-3xl mx-auto px-6 py-8 pb-32">
+        
+        {/* Cover Image Section */}
+        <div className="bg-white rounded-xl border border-stone-200 p-4 mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-stone-900 flex items-center gap-2">
+              <ImagePlus size={18} className="text-orange-500" />
+              Cover Image
+            </h3>
+            {episode?.cover_image_url && (
+              <button
+                onClick={handleRemoveCover}
+                disabled={coverUploading}
+                className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
+              >
+                <X size={14} />
+                Remove
+              </button>
+            )}
+          </div>
+          
+          {episode?.cover_image_url ? (
+            <div className="relative rounded-lg overflow-hidden aspect-[21/9] bg-stone-100">
+              <img 
+                src={episode.cover_image_url} 
+                alt="Episode cover" 
+                className="w-full h-full object-cover"
+              />
+              {coverUploading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <Loader2 className="animate-spin text-white" size={32} />
+                </div>
+              )}
+            </div>
+          ) : (
+            <label className="cursor-pointer block">
+              <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                coverUploading ? 'border-orange-300 bg-orange-50' : 'border-stone-300 hover:border-orange-400 hover:bg-orange-50'
+              }`}>
+                {coverUploading ? (
+                  <Loader2 className="mx-auto mb-2 animate-spin text-orange-500" size={32} />
+                ) : (
+                  <ImagePlus className="mx-auto mb-2 text-stone-400" size={32} />
+                )}
+                <p className="text-sm text-stone-600 font-medium">
+                  {coverUploading ? 'Uploading...' : 'Click to upload a cover image'}
+                </p>
+                <p className="text-xs text-stone-400 mt-1">
+                  Recommended: 21:9 aspect ratio, max 5MB
+                </p>
+              </div>
+              <input 
+                ref={coverInputRef}
+                type="file" 
+                accept="image/*" 
+                onChange={handleCoverUpload}
+                className="hidden"
+                disabled={coverUploading}
+              />
+            </label>
+          )}
+          
+          {episode?.cover_image_url && (
+            <div className="mt-3">
+              <label className="cursor-pointer inline-flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 font-medium">
+                <ImagePlus size={16} />
+                Replace image
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleCoverUpload}
+                  className="hidden"
+                  disabled={coverUploading}
+                />
+              </label>
+            </div>
+          )}
+        </div>
         
         {/* Instructions */}
         <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-8">
