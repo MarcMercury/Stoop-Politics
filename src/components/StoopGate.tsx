@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Mail, Bell, CheckCircle } from 'lucide-react';
+import { Loader2, Mail, Bell, CheckCircle, ArrowLeft } from 'lucide-react';
 
 interface StoopGateProps {
   onSubscribed: () => void;
@@ -13,6 +13,8 @@ export default function StoopGate({ onSubscribed }: StoopGateProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('Welcome to the Stoop!');
+  const [mode, setMode] = useState<'subscribe' | 'returning'>('subscribe');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +43,7 @@ export default function StoopGate({ onSubscribed }: StoopGateProps) {
       // Set cookie to remember subscription (1 year expiry)
       document.cookie = `stoop_subscriber=true; max-age=${365 * 24 * 60 * 60}; path=/; SameSite=Lax`;
       
+      setSuccessMessage(data.isReturning ? 'Welcome back to the Stoop!' : 'Welcome to the Stoop!');
       setSuccess(true);
       
       // Refresh after showing success message
@@ -53,6 +56,54 @@ export default function StoopGate({ onSubscribed }: StoopGateProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/verify-subscriber', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Email not found');
+      }
+
+      // Set cookie to remember subscription (1 year expiry)
+      document.cookie = `stoop_subscriber=true; max-age=${365 * 24 * 60 * 60}; path=/; SameSite=Lax`;
+      
+      setSuccessMessage('Welcome back to the Stoop!');
+      setSuccess(true);
+      
+      // Refresh after showing success message
+      setTimeout(() => {
+        onSubscribed();
+      }, 1500);
+
+    } catch (err: any) {
+      setError(err.message || 'Email not found. Please subscribe first.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchMode = (newMode: 'subscribe' | 'returning') => {
+    setMode(newMode);
+    setError(null);
+    setEmail('');
   };
 
   return (
@@ -93,13 +144,71 @@ export default function StoopGate({ onSubscribed }: StoopGateProps) {
                   <CheckCircle className="w-8 h-8 text-green-600" />
                 </div>
                 <h3 className="text-xl font-bold text-stone-900 mb-2">
-                  Welcome to the Stoop!
+                  {successMessage}
                 </h3>
                 <p className="text-stone-600 text-sm">
                   Refreshing the page...
                 </p>
               </div>
+            ) : mode === 'returning' ? (
+              /* Returning Subscriber Form */
+              <form onSubmit={handleVerify} className="space-y-4">
+                <div className="text-center mb-4">
+                  <h3 className="font-semibold text-stone-900">Welcome back!</h3>
+                  <p className="text-sm text-stone-500">Enter your email to access the stoop</p>
+                </div>
+                
+                {/* Email Input */}
+                <div>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="w-full pl-10 pr-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-stone-900 placeholder:text-stone-400"
+                      disabled={loading}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Error Message */}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">
+                    {error}
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    'Enter the Stoop'
+                  )}
+                </button>
+
+                {/* Back to Subscribe */}
+                <button
+                  type="button"
+                  onClick={() => switchMode('subscribe')}
+                  className="w-full text-stone-500 hover:text-stone-700 text-sm py-2 flex items-center justify-center gap-1"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  New here? Subscribe instead
+                </button>
+              </form>
             ) : (
+              /* New Subscriber Form */
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Email Input */}
                 <div>
@@ -180,6 +289,17 @@ export default function StoopGate({ onSubscribed }: StoopGateProps) {
                 <p className="text-xs text-stone-400 text-center">
                   We respect your privacy. Unsubscribe anytime.
                 </p>
+                
+                {/* Returning Subscriber Link */}
+                <div className="pt-2 border-t border-stone-100">
+                  <button
+                    type="button"
+                    onClick={() => switchMode('returning')}
+                    className="w-full text-orange-600 hover:text-orange-700 text-sm py-2 font-medium"
+                  >
+                    Already subscribed? Click here to enter →
+                  </button>
+                </div>
               </form>
             )}
           </div>
