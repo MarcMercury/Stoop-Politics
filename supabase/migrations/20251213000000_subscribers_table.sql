@@ -24,6 +24,10 @@ ALTER TABLE subscribers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can subscribe" ON subscribers
   FOR INSERT WITH CHECK (true);
 
+-- 4b. Allow public to verify their subscription (needed for returning subscriber flow)
+CREATE POLICY "Anyone can verify their subscription" ON subscribers
+  FOR SELECT USING (true);
+
 -- 5. Create policies for authenticated users (admin) to manage subscribers
 CREATE POLICY "Authenticated users can view subscribers" ON subscribers
   FOR SELECT USING (auth.role() = 'authenticated');
