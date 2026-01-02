@@ -16,7 +16,12 @@ export async function POST(request: NextRequest) {
     // Skip if no API key configured
     if (!resend) {
       console.log('[Notify Subscribers] Skipping - No RESEND_API_KEY configured');
-      return NextResponse.json({ success: true, skipped: true, sentCount: 0 });
+      return NextResponse.json({ 
+        success: false, 
+        skipped: true, 
+        sentCount: 0,
+        error: 'Email service not configured. Please set RESEND_API_KEY environment variable.'
+      }, { status: 503 });
     }
 
     // Fetch all subscribers with notifications enabled
@@ -35,9 +40,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, sentCount: 0, message: 'No subscribers to notify' });
     }
 
+    console.log(`[Notify Subscribers] Found ${subscribers.length} subscribers with notifications enabled`);
+
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://stooppolitics.com';
     let successCount = 0;
     let errorCount = 0;
+    const errors: string[] = [];
 
     // Send emails to each subscriber
     for (const subscriber of subscribers) {
@@ -124,26 +132,42 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error(`[Notify Subscribers] Failed for ${subscriber.email}:`, error);
+          errors.push(`${subscriber.email}: ${error.message || 'Unknown error'}`);
           errorCount++;
         } else {
+          console.log(`[Notify Subscribers] Sent to ${subscriber.email}`);
           successCount++;
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[Notify Subscribers] Error for ${subscriber.email}:`, err);
+        errors.push(`${subscriber.email}: ${err.message || 'Unknown error'}`);
         errorCount++;
       }
     }
 
     console.log(`[Notify Subscribers] Completed: ${successCount} sent, ${errorCount} failed`);
+    
+    if (errorCount > 0 && successCount === 0) {
+      // All failed - likely a configuration issue
+      return NextResponse.json({ 
+        success: false, 
+        error: `All emails failed. First error: ${errors[0] || 'Unknown'}. Check domain verification in Resend.`,
+        sentCount: successCount, 
+        errorCount,
+        totalSubscribers: subscribers.length 
+      }, { status: 500 });
+    }
+    
     return NextResponse.json({ 
       success: true, 
       sentCount: successCount, 
       errorCount,
-      totalSubscribers: subscribers.length 
+      totalSubscribers: subscribers.length,
+      ...(errorCount > 0 && { partialErrors: errors.slice(0, 3) }) // Include first 3 errors if any
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Notify Subscribers] Error:', error);
-    return NextResponse.json({ error: 'Failed to send notifications' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to send notifications' }, { status: 500 });
   }
 }
