@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 // Initialize Resend only if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch all subscribers with notifications enabled
-    const { data: subscribers, error: fetchError } = await supabase
+    const { data: subscribers, error: fetchError } = await supabaseAdmin
       .from('subscribers')
       .select('email')
       .eq('notifications_enabled', true)
