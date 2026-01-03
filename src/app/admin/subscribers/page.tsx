@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   ArrowLeft, Users, Mail, Bell, BellOff, Trash2, Ban, 
-  Loader2, Search, CheckCircle, XCircle, MoreVertical 
+  Loader2, Search, CheckCircle, XCircle, Send, X, Eye, EyeOff, AlertCircle
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -23,6 +23,14 @@ export default function SubscribersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'notifications'>('all');
+  
+  // Compose Modal State
+  const [showComposeModal, setShowComposeModal] = useState(false);
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeMessage, setComposeMessage] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const fetchSubscribers = async () => {
     const { data, error } = await supabase
@@ -119,20 +127,275 @@ export default function SubscribersPage() {
     banned: subscribers.filter(s => s.status === 'banned').length,
   };
 
+  // Reset compose modal
+  const resetComposeModal = () => {
+    setComposeSubject('');
+    setComposeMessage('');
+    setShowPreview(false);
+    setSendResult(null);
+  };
+
+  const openComposeModal = () => {
+    resetComposeModal();
+    setShowComposeModal(true);
+  };
+
+  const closeComposeModal = () => {
+    if (sending) return;
+    if ((composeSubject || composeMessage) && !sendResult) {
+      if (!confirm('Discard this message?')) return;
+    }
+    setShowComposeModal(false);
+    resetComposeModal();
+  };
+
+  // Send custom notification
+  const handleSendNotification = async () => {
+    if (!composeSubject.trim()) {
+      alert('Please enter a subject line');
+      return;
+    }
+    if (!composeMessage.trim()) {
+      alert('Please enter a message');
+      return;
+    }
+    if (stats.withNotifications === 0) {
+      alert('No subscribers have notifications enabled');
+      return;
+    }
+
+    if (!confirm(`Send this notification to ${stats.withNotifications} subscriber${stats.withNotifications !== 1 ? 's' : ''}?`)) {
+      return;
+    }
+
+    setSending(true);
+    setSendResult(null);
+
+    try {
+      const response = await fetch('/api/email/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: composeSubject.trim(),
+          message: composeMessage.trim(),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setSendResult({
+          success: true,
+          message: `Successfully sent to ${result.sentCount} subscriber${result.sentCount !== 1 ? 's' : ''}!`
+        });
+      } else {
+        throw new Error(result.error || 'Failed to send notification');
+      }
+    } catch (error: any) {
+      setSendResult({
+        success: false,
+        message: error.message || 'Failed to send notification'
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link
-          href="/admin"
-          className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
-        >
-          <ArrowLeft size={20} />
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-stone-900">Subscribers</h1>
-          <p className="text-stone-500 mt-1">Manage your stoop community</p>
+      {/* Compose Modal */}
+      {showComposeModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
+              <div>
+                <h2 className="text-xl font-bold text-stone-900">Send Notification</h2>
+                <p className="text-sm text-stone-500 mt-0.5">
+                  Send to {stats.withNotifications} subscriber{stats.withNotifications !== 1 ? 's' : ''} with notifications enabled
+                </p>
+              </div>
+              <button
+                onClick={closeComposeModal}
+                disabled={sending}
+                className="p-2 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {sendResult ? (
+                /* Result Screen */
+                <div className="py-8 text-center">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                    sendResult.success ? 'bg-green-100' : 'bg-red-100'
+                  }`}>
+                    {sendResult.success ? (
+                      <CheckCircle className="w-8 h-8 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-8 h-8 text-red-600" />
+                    )}
+                  </div>
+                  <h3 className={`text-xl font-bold mb-2 ${
+                    sendResult.success ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {sendResult.success ? 'Sent!' : 'Failed'}
+                  </h3>
+                  <p className="text-stone-600">{sendResult.message}</p>
+                  <button
+                    onClick={closeComposeModal}
+                    className="mt-6 px-6 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : showPreview ? (
+                /* Preview Screen */
+                <div className="space-y-4">
+                  <div className="bg-stone-50 rounded-xl border border-stone-200 p-6">
+                    <div className="text-sm text-stone-500 mb-1">Subject:</div>
+                    <div className="text-lg font-semibold text-stone-900 mb-4">
+                      {composeSubject || '(No subject)'}
+                    </div>
+                    <div className="text-sm text-stone-500 mb-1">Message:</div>
+                    <div className="text-stone-700 whitespace-pre-wrap leading-relaxed">
+                      {composeMessage || '(No message)'}
+                    </div>
+                  </div>
+                  <p className="text-sm text-stone-500 text-center">
+                    This is how your message will appear to subscribers.
+                  </p>
+                </div>
+              ) : (
+                /* Compose Form */
+                <>
+                  {/* Subject */}
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-1.5">
+                      Subject Line <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={composeSubject}
+                      onChange={(e) => setComposeSubject(e.target.value)}
+                      placeholder="e.g., Big News from the Stoop! 🎙️"
+                      className="w-full px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-stone-900 placeholder:text-stone-400"
+                      maxLength={100}
+                      disabled={sending}
+                    />
+                    <div className="flex justify-between mt-1.5 text-xs text-stone-400">
+                      <span>Keep it short and engaging</span>
+                      <span>{composeSubject.length}/100</span>
+                    </div>
+                  </div>
+
+                  {/* Message */}
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-1.5">
+                      Message <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={composeMessage}
+                      onChange={(e) => setComposeMessage(e.target.value)}
+                      placeholder="Write your message to subscribers..."
+                      rows={8}
+                      className="w-full px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-stone-900 placeholder:text-stone-400 resize-none"
+                      maxLength={2000}
+                      disabled={sending}
+                    />
+                    <div className="flex justify-between mt-1.5 text-xs text-stone-400">
+                      <span>Plain text only. Line breaks will be preserved.</span>
+                      <span className={composeMessage.length > 1800 ? 'text-orange-500 font-medium' : ''}>
+                        {composeMessage.length}/2000
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tips */}
+                  <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
+                    <h4 className="text-sm font-semibold text-orange-800 mb-2">💡 Writing Tips</h4>
+                    <ul className="text-xs text-orange-700 space-y-1">
+                      <li>• Keep it conversational and authentic to the stoop vibe</li>
+                      <li>• Use emojis sparingly for personality 🎙️</li>
+                      <li>• Include a clear call to action if needed</li>
+                      <li>• Subscribers can unsubscribe from the email footer</li>
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            {!sendResult && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-stone-200 bg-stone-50">
+                <button
+                  onClick={() => setShowPreview(!showPreview)}
+                  disabled={sending}
+                  className="flex items-center gap-2 px-4 py-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {showPreview ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPreview ? 'Edit' : 'Preview'}
+                </button>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={closeComposeModal}
+                    disabled={sending}
+                    className="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSendNotification}
+                    disabled={sending || !composeSubject.trim() || !composeMessage.trim()}
+                    className="flex items-center gap-2 px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sending ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={18} />
+                        Send to {stats.withNotifications}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/admin"
+            className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
+          >
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-stone-900">Subscribers</h1>
+            <p className="text-stone-500 mt-1">Manage your stoop community</p>
+          </div>
+        </div>
+        
+        {/* Send Notification Button */}
+        <button
+          onClick={openComposeModal}
+          disabled={stats.withNotifications === 0}
+          className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+          title={stats.withNotifications === 0 ? 'No subscribers with notifications enabled' : `Send to ${stats.withNotifications} subscribers`}
+        >
+          <Send size={18} />
+          <span className="hidden sm:inline">Send Notification</span>
+        </button>
       </div>
 
       {/* Stats Cards */}
