@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   ArrowLeft, Users, Mail, Bell, BellOff, Trash2, Ban, 
-  Loader2, Search, CheckCircle, XCircle, Send, X, Eye, EyeOff, AlertCircle
+  Loader2, Search, CheckCircle, Send, X, Eye, EyeOff, AlertCircle
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 

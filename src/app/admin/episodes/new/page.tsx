@@ -618,7 +618,7 @@ export default function CreateEpisode() {
               )}
             </button>
             <p className="text-center text-xs text-stone-400">
-              We'll transcribe your audio with AI and take you to the editor.
+              We&apos;ll transcribe your audio with AI and take you to the editor.
             </p>
           </div>
 

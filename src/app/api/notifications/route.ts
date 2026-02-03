@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       enabled: subscriber.notifications_enabled
     });
 
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Something went wrong' },
       { status: 500 }

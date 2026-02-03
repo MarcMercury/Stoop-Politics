@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, CheckCircle, XCircle, Bell, BellOff } from 'lucide-react';
+import { Loader2, XCircle, Bell, BellOff } from 'lucide-react';
 
 function UnsubscribeContent() {
   const searchParams = useSearchParams();
@@ -14,16 +14,7 @@ function UnsubscribeContent() {
   const [error, setError] = useState<string | null>(null);
   const [action, setAction] = useState<'unsubscribe' | 'resubscribe'>('unsubscribe');
 
-  useEffect(() => {
-    if (email) {
-      handleUnsubscribe();
-    } else {
-      setLoading(false);
-      setError('No email address provided');
-    }
-  }, [email]);
-
-  const handleUnsubscribe = async () => {
+  const handleUnsubscribe = useCallback(async () => {
     if (!email) return;
     
     setLoading(true);
@@ -44,12 +35,22 @@ function UnsubscribeContent() {
 
       setSuccess(true);
       setAction('unsubscribe');
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [email]);
+
+  useEffect(() => {
+    if (email) {
+      handleUnsubscribe();
+    } else {
+      setLoading(false);
+      setError('No email address provided');
+    }
+  }, [email, handleUnsubscribe]);
 
   const handleResubscribe = async () => {
     if (!email) return;
@@ -72,8 +73,9 @@ function UnsubscribeContent() {
 
       setSuccess(true);
       setAction('resubscribe');
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

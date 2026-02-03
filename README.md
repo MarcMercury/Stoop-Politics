@@ -1,5 +1,27 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Setup
+
+Before running the project, you need to configure the required environment variables:
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+2. Fill in your values in `.env.local`:
+
+   | Variable | Required | Description |
+   |----------|----------|-------------|
+   | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Your Supabase project URL |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anonymous key |
+   | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key (for server-side operations) |
+   | `RESEND_API_KEY` | Yes | Resend API key for email notifications ([get one here](https://resend.com/api-keys)) |
+   | `EMAIL_FROM` | No | Email sender address (default: `Stoop Politics <noreply@stooppolitics.com>`) |
+   | `NEXT_PUBLIC_SITE_URL` | No | Site URL for email links (default: `https://stooppolitics.com`) |
+
+> ⚠️ **Important**: Email notifications will NOT work without a valid `RESEND_API_KEY`. Make sure to verify your sending domain in Resend dashboard.
+
 ## Getting Started
 
 First, run the development server:

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, Share2, Check, Link as LinkIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { Play, Pause, Check, Link as LinkIcon, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface TranscriptNode {
   id: string;
@@ -21,7 +21,7 @@ interface TranscriptPlayerProps {
   onToggleCollapse?: () => void;
 }
 
-export default function TranscriptPlayer({ audioUrl, transcriptNodes, episodeTitle, isCollapsed = true, onToggleCollapse }: TranscriptPlayerProps) {
+export default function TranscriptPlayer({ audioUrl, transcriptNodes, isCollapsed = true, onToggleCollapse }: TranscriptPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -120,7 +120,7 @@ export default function TranscriptPlayer({ audioUrl, transcriptNodes, episodeTit
   }, [activeNodeIndex]);
 
   // Handle clicking on a transcript node
-  const handleNodeClick = (node: TranscriptNode, index: number) => {
+  const handleNodeClick = (node: TranscriptNode) => {
     if (node.start_time !== null && audioRef.current) {
       audioRef.current.currentTime = node.start_time;
       setCurrentTime(node.start_time);
@@ -285,7 +285,7 @@ export default function TranscriptPlayer({ audioUrl, transcriptNodes, episodeTit
                     ${hasTimestamp ? 'cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-950/30 rounded px-0.5 -mx-0.5 transition-colors' : ''}
                     ${isActive ? 'bg-orange-100 dark:bg-orange-900/40 ring-2 ring-orange-400 dark:ring-orange-500 rounded' : ''}
                   `}
-                  onClick={() => hasTimestamp && handleNodeClick(node, index)}
+                  onClick={() => hasTimestamp && handleNodeClick(node)}
                 >
                   {node.reference_link ? (
                     <a 

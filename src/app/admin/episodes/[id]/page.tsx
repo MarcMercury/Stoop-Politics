@@ -85,6 +85,27 @@ export default function TranscriptEditor({ params }: { params: Promise<{ id: str
       .eq('id', resolvedParams.id);
     
     if (!error) {
+      // Send notifications to subscribers (non-blocking)
+      try {
+        const notifyResponse = await fetch('/api/email/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            episodeTitle: episode.title,
+            episodeSummary: episode.summary,
+            episodeId: resolvedParams.id,
+          }),
+        });
+        const notifyResult = await notifyResponse.json();
+        if (notifyResponse.ok && notifyResult.sentCount > 0) {
+          alert(`Episode published! Notified ${notifyResult.sentCount} subscribers.`);
+        } else if (notifyResult.skipped) {
+          // Email service not configured, just proceed
+        }
+      } catch (notifyError) {
+        console.error('Failed to send notifications:', notifyError);
+        // Don't block publishing if notifications fail
+      }
       router.push('/admin');
     } else {
       alert('Error publishing: ' + error.message);
@@ -334,7 +355,7 @@ export default function TranscriptEditor({ params }: { params: Promise<{ id: str
           </div>
         ) : (
           <div className="space-y-4">
-            {nodes.map((node, index) => (
+            {nodes.map((node) => (
               <div 
                 key={node.id} 
                 className={'group relative bg-white rounded-xl border-2 transition-all duration-200 overflow-hidden ' + 

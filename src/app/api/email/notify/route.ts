@@ -47,9 +47,16 @@ export async function POST(request: NextRequest) {
     let errorCount = 0;
     const errors: string[] = [];
 
+    // Helper to delay between emails (Resend free tier: 2 requests/second)
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
     // Send emails to each subscriber
-    for (const subscriber of subscribers) {
+    for (let i = 0; i < subscribers.length; i++) {
+      const subscriber = subscribers[i];
       const unsubscribeUrl = `${baseUrl}/unsubscribe?email=${encodeURIComponent(subscriber.email)}`;
+
+      // Add delay after first email to respect rate limits
+      if (i > 0) await delay(600);
       
       try {
         const { error } = await resend.emails.send({

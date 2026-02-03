@@ -67,14 +67,6 @@ export function useTimeOfDay(): TimeOfDay {
 
 export function StoopModeProvider({ children }: StoopModeProviderProps) {
   const timeOfDay = useTimeOfDay();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Get theme classes
-  const theme = themeClasses[mounted ? timeOfDay : 'afternoon'];
 
   return (
     <div 

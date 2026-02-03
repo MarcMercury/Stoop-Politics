@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
 /**
@@ -10,7 +10,7 @@ import { supabaseAdmin } from '@/lib/supabase';
  * - Subscribers table access
  * - Email service configuration
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   const health = {
     timestamp: new Date().toISOString(),
     status: 'ok' as 'ok' | 'degraded' | 'error',
@@ -30,8 +30,9 @@ export async function GET(request: NextRequest) {
     } else {
       health.checks.database = { status: 'ok', message: 'Connected to Supabase' };
     }
-  } catch (err: any) {
-    health.checks.database = { status: 'error', message: err.message || 'Connection failed' };
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Connection failed';
+    health.checks.database = { status: 'error', message: errorMessage };
     health.status = 'error';
   }
 
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
       count: totalCount || 0,
       withNotifications: notifyCount || 0,
     };
-  } catch (err: any) {
+  } catch {
     health.checks.subscribersTable = {
       status: 'error',
       count: 0,
