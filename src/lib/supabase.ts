@@ -1,29 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
-// Public client - for client-side operations (uses anon key with RLS)
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-// Warn if service role key is missing (server-side only)
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!serviceRoleKey && typeof window === 'undefined') {
-  console.warn(
-    '[Supabase] WARNING: SUPABASE_SERVICE_ROLE_KEY is not set. ' +
-    'Admin operations will use the anon key with reduced permissions.'
+/**
+ * Browser Supabase client — uses cookies for auth (compatible with middleware).
+ * createBrowserClient is a singleton; safe to call from multiple components.
+ */
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 }
 
-// Admin client - for server-side operations (bypasses RLS)
-// Only use this in API routes, never expose to client
-export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  serviceRoleKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
+/**
+ * @deprecated Use `createClient()` instead. Kept as alias for compatibility.
+ */
+export const supabase = createClient();

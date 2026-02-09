@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-server";
 import Link from "next/link";
 import { User } from "lucide-react";
 import HomePageClient from "@/components/HomePageClient";
