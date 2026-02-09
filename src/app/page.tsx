@@ -131,7 +131,8 @@ function ComingSoonPage() {
 }
 
 // Server Component - runs on every request
-export default async function Home() {
+export default async function Home(props: { searchParams: Promise<{ episode?: string }> }) {
+  const searchParams = await props.searchParams;
 
   // 1. Fetch ALL published episodes for the archive dropdown
   const { data: allEpisodes, error } = await supabase
@@ -140,34 +141,40 @@ export default async function Home() {
     .eq('is_published', true)
     .order('published_at', { ascending: false });
 
-  // Debug: Log to server console
-  console.log('Fetched episodes:', allEpisodes?.length || 0, 'Error:', error?.message || 'none');
+  if (error) {
+    console.error('Failed to fetch episodes:', error.message);
+  }
 
-  // 2. Get the latest episode (first in the sorted list)
-  const latestEpisode = allEpisodes?.[0];
+  // 2. Determine which episode to display (supports ?episode=<id> for archive links)
+  let selectedEpisode = allEpisodes?.[0]; // Default to latest
+  if (searchParams.episode && allEpisodes) {
+    const found = allEpisodes.find((ep: any) => ep.id === searchParams.episode);
+    if (found) selectedEpisode = found;
+  }
   
-  // 3. Get previous episodes for archive (exclude latest)
-  const previousEpisodes = allEpisodes?.slice(1) || [];
+  // 3. Get previous episodes for archive (exclude selected)
+  const previousEpisodes = allEpisodes?.filter((ep: any) => ep.id !== selectedEpisode?.id) || [];
 
-  // If no episode is found, show the full branded "Coming Soon" experience
-  if (!latestEpisode) {
+  // If no episode is found, show the "Coming Soon" experience
+  if (!selectedEpisode) {
     return <ComingSoonPage />;
   }
 
-  // 4. Fetch the transcript for the latest episode
+  // 4. Fetch the transcript for the selected episode
   const { data: transcript, error: transcriptError } = await supabase
     .from('transcript_nodes')
     .select('*')
-    .eq('episode_id', latestEpisode.id)
+    .eq('episode_id', selectedEpisode.id)
     .order('display_order', { ascending: true });
 
-  // Debug logging
-  console.log('Transcript fetch for episode:', latestEpisode.id, 'Nodes:', transcript?.length || 0, 'Error:', transcriptError?.message || 'none');
+  if (transcriptError) {
+    console.error('Failed to fetch transcript:', transcriptError.message);
+  }
 
   // Render the interactive client component with server-fetched data
   return (
     <HomePageClient 
-      latestEpisode={latestEpisode}
+      latestEpisode={selectedEpisode}
       previousEpisodes={previousEpisodes}
       transcript={transcript || []}
     />

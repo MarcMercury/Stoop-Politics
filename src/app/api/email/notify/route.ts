@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase';
+import { requireAdmin } from '@/lib/auth';
 
 // Initialize Resend only if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const authError = await requireAdmin(request);
+    if (authError) return authError;
+
     const { episodeTitle, episodeSummary, episodeId } = await request.json();
 
     if (!episodeTitle) {

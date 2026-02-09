@@ -93,8 +93,13 @@ export function StoopModeProvider({ children }: StoopModeProviderProps) {
           text-shadow: 0 0 20px rgba(249, 115, 22, 0.5), 0 0 40px rgba(249, 115, 22, 0.3);
         }
         
-        /* Smooth transitions for all themed elements */
-        .stoop-mode * {
+        /* Smooth transitions for major themed elements (scoped for performance) */
+        .stoop-mode main,
+        .stoop-mode nav,
+        .stoop-mode footer,
+        .stoop-mode section,
+        .stoop-mode header,
+        .stoop-mode .stoop-logo {
           transition-property: background-color, border-color, color, box-shadow;
           transition-duration: 300ms;
         }

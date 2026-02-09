@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin as supabase } from '@/lib/supabase';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 10 verify attempts per IP per minute
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`verify:${ip}`, 10, 60_000)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again in a minute.' },
+        { status: 429 }
+      );
+    }
+
     const { email } = await request.json();
 
     if (!email || !email.includes('@')) {

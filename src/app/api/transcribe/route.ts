@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/auth';
 
 // Route segment config for large audio file uploads
 export const maxDuration = 60; // Allow up to 60 seconds for long transcriptions
@@ -9,6 +10,10 @@ export async function POST(request: NextRequest) {
   console.log('[Transcribe] Starting transcription request...');
   
   try {
+    // Verify admin authentication
+    const authError = await requireAdmin(request);
+    if (authError) return authError;
+
     // Check for required environment variables
     if (!process.env.OPENAI_API_KEY) {
       console.error('[Transcribe] Missing OPENAI_API_KEY');

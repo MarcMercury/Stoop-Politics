@@ -2,17 +2,12 @@
 
 import { useState, FormEvent } from 'react';
 import { Send, CheckCircle, AlertCircle, MessageSquare } from 'lucide-react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase';
 
 export default function AskTheStoop() {
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
