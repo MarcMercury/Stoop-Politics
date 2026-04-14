@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 5 notification preference changes per IP per minute
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`notifications:${ip}`, 5, 60_000)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again in a minute.' },
+        { status: 429 }
+      );
+    }
+
     const { email, enabled } = await request.json();
 
     if (!email) {
@@ -60,6 +70,15 @@ export async function POST(request: NextRequest) {
 // GET endpoint to check notification status
 export async function GET(request: NextRequest) {
   try {
+    // Rate limit: 10 status checks per IP per minute
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`notifications-get:${ip}`, 10, 60_000)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again in a minute.' },
+        { status: 429 }
+      );
+    }
+
     const email = request.nextUrl.searchParams.get('email');
 
     if (!email) {

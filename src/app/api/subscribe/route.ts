@@ -70,14 +70,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send welcome email (non-blocking)
+    // Send welcome email (non-blocking, with timeout to prevent cascade)
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
       const baseUrl = request.nextUrl.origin;
       await fetch(`${baseUrl}/api/email/welcome`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, notifyMe }),
-      });
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeout));
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
       // Don't fail the subscription if email fails

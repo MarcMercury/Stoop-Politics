@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 // Route segment config for large audio file uploads
 export const maxDuration = 60; // Allow up to 60 seconds for long transcriptions
@@ -13,6 +14,15 @@ export async function POST(request: NextRequest) {
     // Verify admin authentication
     const authError = await requireAdmin(request);
     if (authError) return authError;
+
+    // Rate limit: 3 transcription requests per admin per 5 minutes
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`transcribe:${ip}`, 3, 5 * 60_000)) {
+      return NextResponse.json(
+        { error: 'Too many transcription requests. Please wait a few minutes.' },
+        { status: 429 }
+      );
+    }
 
     // Check for required environment variables
     if (!process.env.OPENAI_API_KEY) {

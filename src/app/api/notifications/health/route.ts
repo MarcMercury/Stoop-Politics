@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
+// Cache health check result for 30 seconds to prevent hammering
+let cachedHealth: { data: any; expiry: number } | null = null;
+
 /**
  * Health check endpoint for notification system
  * GET /api/notifications/health
- * 
- * Returns status of:
- * - Database connection
- * - Subscribers table access
- * - Email service configuration
  */
 export async function GET() {
+  // Return cached response if still valid
+  const now = Date.now();
+  if (cachedHealth && now < cachedHealth.expiry) {
+    return NextResponse.json(cachedHealth.data, {
+      status: cachedHealth.data.status === 'error' ? 500 : 200,
+    });
+  }
   const health = {
     timestamp: new Date().toISOString(),
     status: 'ok' as 'ok' | 'degraded' | 'error',
@@ -81,6 +86,9 @@ export async function GET() {
     };
     if (health.status === 'ok') health.status = 'degraded';
   }
+
+  // Cache the result for 30 seconds
+  cachedHealth = { data: health, expiry: Date.now() + 30_000 };
 
   return NextResponse.json(health, { 
     status: health.status === 'error' ? 500 : 200 

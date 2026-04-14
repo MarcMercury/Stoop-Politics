@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 // Initialize Resend only if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 3 welcome emails per IP per minute
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`welcome:${ip}`, 3, 60_000)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again in a minute.' },
+        { status: 429 }
+      );
+    }
+
     const { email, notifyMe } = await request.json();
 
     if (!email) {

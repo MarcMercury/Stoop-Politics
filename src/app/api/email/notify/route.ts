@@ -2,17 +2,45 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAdmin } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 // Initialize Resend only if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+// Track recently notified episode IDs to prevent duplicate blasts
+const recentNotifications = new Map<string, number>();
+
 export async function POST(request: NextRequest) {
+  let episodeId: string | undefined;
   try {
     // Verify admin authentication
     const authError = await requireAdmin(request);
     if (authError) return authError;
 
-    const { episodeTitle, episodeSummary, episodeId } = await request.json();
+    // Rate limit: 3 notify calls per admin per minute
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`notify:${ip}`, 3, 60_000)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait before sending another notification.' },
+        { status: 429 }
+      );
+    }
+
+    const body = await request.json();
+    const { episodeTitle, episodeSummary } = body;
+    episodeId = body.episodeId;
+
+    // Idempotency: prevent duplicate notifications for the same episode within 5 minutes
+    if (episodeId) {
+      const lastSent = recentNotifications.get(episodeId);
+      if (lastSent && Date.now() - lastSent < 5 * 60_000) {
+        return NextResponse.json({
+          success: true,
+          skipped: true,
+          message: 'Notification for this episode was already sent recently. Please wait 5 minutes before resending.',
+        });
+      }
+    }
 
     if (!episodeTitle) {
       return NextResponse.json({ error: 'Episode title is required' }, { status: 400 });
@@ -181,5 +209,17 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[Notify Subscribers] Error:', error);
     return NextResponse.json({ error: error.message || 'Failed to send notifications' }, { status: 500 });
+  }
+
+  // Record this notification to prevent duplicate blasts
+  finally {
+    if (episodeId) {
+      recentNotifications.set(episodeId, Date.now());
+      // Clean up old entries
+      const fiveMinAgo = Date.now() - 5 * 60_000;
+      for (const [key, ts] of recentNotifications) {
+        if (ts < fiveMinAgo) recentNotifications.delete(key);
+      }
+    }
   }
 }

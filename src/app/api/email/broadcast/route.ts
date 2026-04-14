@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAdmin } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 // Initialize Resend only if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -11,6 +12,15 @@ export async function POST(request: NextRequest) {
     // Verify admin authentication
     const authError = await requireAdmin(request);
     if (authError) return authError;
+
+    // Rate limit: 2 broadcasts per admin per 5 minutes
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`broadcast:${ip}`, 2, 5 * 60_000)) {
+      return NextResponse.json(
+        { error: 'Too many broadcasts. Please wait a few minutes before sending another.' },
+        { status: 429 }
+      );
+    }
 
     const { subject, message } = await request.json();
 
