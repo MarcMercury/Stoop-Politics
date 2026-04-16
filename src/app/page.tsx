@@ -3,9 +3,9 @@ import Link from "next/link";
 import { User } from "lucide-react";
 import HomePageClient from "@/components/HomePageClient";
 
-// Force dynamic rendering - no caching, fetch fresh data every request
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// ISR: cache page for 60 seconds, then revalidate in background.
+// This means at most 1 DB query per 60 seconds instead of every single visitor.
+export const revalidate = 60;
 
 // Coming Soon page (shown when no episodes exist)
 function ComingSoonPage() {

@@ -85,6 +85,13 @@ export default function TranscriptEditor({ params }: { params: Promise<{ id: str
       .eq('id', resolvedParams.id);
     
     if (!error) {
+      // Revalidate the cached homepage so the new episode appears immediately
+      try {
+        await fetch('/api/revalidate', { method: 'POST' });
+      } catch (e) {
+        console.error('Revalidation failed:', e);
+      }
+
       // Send notifications to subscribers (non-blocking)
       try {
         const notifyResponse = await fetch('/api/email/notify', {
